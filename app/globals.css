@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 142 69% 29%;
+  --radius: 0.5rem;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; font-family: var(--font-geist-sans), system-ui, sans-serif; }
+  h1, h2, h3, h4, h5, h6 { @apply font-semibold; }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .price-flash { animation: price-flash 0.6s ease-in-out; }
+  .sw-card { @apply bg-white rounded-xl border border-gray-200 shadow-sm; }
+  .sw-badge-mr { @apply bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded; }
+  .sw-badge-fr { @apply bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded; }
+  .sw-badge-nfr { @apply bg-gray-100 text-gray-800 text-xs font-bold px-2 py-0.5 rounded; }
+  .sw-badge-ac { @apply bg-purple-100 text-purple-800 text-xs font-bold px-2 py-0.5 rounded; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #2d6a4f; border-radius: 3px; }
+
+/* Zone zone card hover */
+.zone-card { transition: all 0.15s ease; }
+.zone-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,106,79,0.15); }
+.zone-card.active { border-color: #2d6a4f; background: #f0faf4; }
+
+/* Price transition */
+.price-value { transition: color 0.3s ease; }
+.price-updating { color: #2d6a4f !important; }

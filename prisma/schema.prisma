@@ -1,0 +1,449 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Grade {
+  NFR
+  MR
+  FR
+  AC
+}
+
+enum Emirate {
+  DUBAI
+  SHARJAH
+  AJMAN
+  RAK
+  ABU_DHABI
+  FUJAIRAH
+  UMM_AL_QUWAIN
+}
+
+enum ServiceTier {
+  LITE
+  VALUE
+  CLASSIC
+  TRADE_PLUS
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  PDC
+  LC
+  TABBY
+  TAMARA
+  CARD_EMI
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  PDC_PENDING
+  LC_PROCESSING
+}
+
+enum OrderStatus {
+  CONFIRMED
+  IN_PRODUCTION
+  READY_TO_DISPATCH
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+  ISSUE
+}
+
+enum CompanyStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  VIP
+}
+
+enum UserRole {
+  BUYER
+  MANAGER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PromoType {
+  FIXED
+  PERCENTAGE
+  FREE_DELIVERY
+}
+
+enum Industry {
+  JOINERY
+  FITOUT_CONTRACTOR
+  DOOR_MANUFACTURER
+  DISTRIBUTOR
+  HOSPITALITY
+  CONSTRUCTION
+  RETAIL
+  OTHER
+}
+
+enum AddonType {
+  CUTTING
+  WHATSAPP_STATUS
+  SIGNED_TDS
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Product {
+  id             String         @id @default(cuid())
+  skuCode        String         @unique
+  grade          Grade
+  thicknessMm    Int
+  widthMm        Int            @default(2440)
+  heightMm       Int            @default(1220)
+  densityKgM3    Int
+  nameEn         String
+  nameAr         String?
+  moq            Int            @default(50)
+  basePrice      Decimal        @db.Decimal(10, 2)
+  isActive       Boolean        @default(true)
+  specs          Json
+  certifications String[]
+  applications   String[]
+  tdsRevision    Int            @default(1)
+  tdsIssueDate   DateTime
+  tdsDocumentUrl String?
+  tdsDocumentRef String
+  inventory      Inventory?
+  priceHistory   PriceHistory[]
+  orderItems     OrderItem[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([grade])
+  @@index([thicknessMm])
+  @@index([isActive])
+}
+
+model Inventory {
+  id            String   @id @default(cuid())
+  productId     String   @unique
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currentStock  Int
+  reservedStock Int      @default(0)
+  reorderLevel  Int      @default(100)
+  lastUpdated   DateTime @default(now())
+  updatedBy     String?
+}
+
+model PriceHistory {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  oldPrice  Decimal  @db.Decimal(10, 2)
+  newPrice  Decimal  @db.Decimal(10, 2)
+  changedBy String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model Zone {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  emirate      Emirate
+  distanceKm   Int
+  leadTimeDays Int
+  pricingTiers Json
+  isActive     Boolean  @default(true)
+  orders       Order[]
+
+  @@index([emirate])
+}
+
+model Company {
+  id             String        @id @default(cuid())
+  name           String
+  tradeLicenceNo String
+  trnVat         String?
+  licenceExpiry  DateTime?
+  industry       Industry
+  status         CompanyStatus @default(PENDING)
+  creditLimit    Decimal       @default(0) @db.Decimal(12, 2)
+  users          User[]
+  orders         Order[]
+  pdcRecords     PDCRecord[]
+  lcRecords      LCRecord[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status])
+  @@index([tradeLicenceNo])
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String
+  phone     String?
+  whatsapp  String?
+  password  String?
+  role      UserRole   @default(BUYER)
+  companyId String?
+  company   Company?   @relation(fields: [companyId], references: [id])
+  sessions  Session[]
+  auditLogs AuditLog[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([email])
+  @@index([companyId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Order {
+  id              String              @id @default(cuid())
+  orderRef        String              @unique
+  companyId       String
+  company         Company             @relation(fields: [companyId], references: [id])
+  items           OrderItem[]
+  serviceTier     ServiceTier
+  zoneId          String
+  zone            Zone                @relation(fields: [zoneId], references: [id])
+  deliveryAddress String
+  baseAmount      Decimal             @db.Decimal(12, 2)
+  deliveryAmount  Decimal             @db.Decimal(12, 2)
+  addonsAmount    Decimal             @default(0) @db.Decimal(12, 2)
+  vatAmount       Decimal             @db.Decimal(12, 2)
+  discountAmount  Decimal             @default(0) @db.Decimal(12, 2)
+  convenienceFee  Decimal             @default(0) @db.Decimal(12, 2)
+  totalAmount     Decimal             @db.Decimal(12, 2)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus       @default(PENDING)
+  priceLocked     Boolean             @default(false)
+  priceLockExpiry DateTime?
+  promoCode       String?
+  status          OrderStatus         @default(CONFIRMED)
+  adminNotes      String?
+  projectName     String?
+  consultantName  String?
+  addons          OrderAddon[]
+  payment         PaymentTransaction?
+  dispatchedAt    DateTime?
+  deliveredAt     DateTime?
+  waMessageSent   Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([orderRef])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(12, 2)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderAddon {
+  id      String    @id @default(cuid())
+  orderId String
+  order   Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type    AddonType
+  price   Decimal   @db.Decimal(10, 2)
+
+  @@index([orderId])
+}
+
+model PaymentTransaction {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+  method          PaymentMethod
+  amount          Decimal       @db.Decimal(12, 2)
+  currency        String        @default("AED")
+  status          PaymentStatus
+  gatewayRef      String?
+  gatewayResponse Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model PDCRecord {
+  id         String    @id @default(cuid())
+  companyId  String
+  company    Company   @relation(fields: [companyId], references: [id])
+  orderId    String?
+  chequeNo   String
+  bankName   String
+  amount     Decimal   @db.Decimal(12, 2)
+  dueDate    DateTime
+  status     String    @default("PENDING")
+  receivedAt DateTime?
+  clearedAt  DateTime?
+  adminNotes String?
+  createdAt  DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model LCRecord {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  orderId     String?
+  issuingBank String
+  lcReference String
+  amount      Decimal  @db.Decimal(12, 2)
+  expiryDate  DateTime
+  status      String   @default("PROCESSING")
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model Deal {
+  id           String    @id @default(cuid())
+  position     Int
+  typeTag      String
+  gradientFrom String    @default("#1e4d38")
+  gradientTo   String    @default("#0f2318")
+  emoji        String
+  titleEn      String
+  titleAr      String?
+  description  String
+  pricingText  String
+  ctaText      String
+  ctaLink      String
+  isActive     Boolean   @default(true)
+  validFrom    DateTime?
+  validUntil   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isActive])
+  @@index([position])
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  type          PromoType
+  value         Decimal   @db.Decimal(10, 2)
+  minOrder      Decimal   @default(0) @db.Decimal(10, 2)
+  grades        Grade[]
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  maxPerCompany Int?
+  validFrom     DateTime
+  validUntil    DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model TDSDownloadLog {
+  id        String   @id @default(cuid())
+  productId String
+  companyId String?
+  userId    String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String   @default("system")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  companyId String?
+  type      String
+  channel   String
+  subject   String?
+  body      String
+  sentAt    DateTime?
+  status    String    @default("PENDING")
+  meta      Json?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([status])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model PriceLockSession {
+  id         String      @id @default(cuid())
+  sessionKey String      @unique
+  skuCode    String
+  zoneId     String
+  quantity   Int
+  tier       ServiceTier
+  price      Decimal     @db.Decimal(10, 2)
+  expiresAt  DateTime
+  companyId  String?
+  createdAt  DateTime    @default(now())
+
+  @@index([sessionKey])
+  @@index([expiresAt])
+}
