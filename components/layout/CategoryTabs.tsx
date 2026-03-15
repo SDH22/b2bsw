@@ -34,11 +34,6 @@ export function CategoryTabs() {
               >
                 <span className="text-xl leading-none">{tab.icon}</span>
                 <span className="tracking-wide">{tab.label}</span>
-                {tab.hot && (
-                  <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm leading-none uppercase tracking-wider">
-                    HOT
-                  </span>
-                )}
               </Link>
             )
           })}

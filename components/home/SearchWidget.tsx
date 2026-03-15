@@ -29,7 +29,7 @@ const QTY_OPTIONS = [
   { value: 500, label: '500+' },
 ]
 
-const BASE_PRICES: Record<Grade, number> = { NFR: 30, MR: 38, FR: 61, AC: 85 }
+const BASE_PRICES: Record<string, number> = { NFR: 30, MR: 38, FR: 61, AC: 85, STD: 32, ULF: 45, ACS: 55, BB: 48, OSB3: 28 }
 const DELIVERY_COSTS: Record<string, number> = {
   'jebel-ali': 4, 'al-quoz': 6, 'sharjah': 9, 'abu-dhabi': 22, 'al-ain': 28
 }
