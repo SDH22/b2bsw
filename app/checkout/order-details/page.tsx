@@ -138,7 +138,6 @@ function OrderDetailsContent() {
                 // Negative delta = cheaper (good), positive = dearer (urgent premium)
                 const isDiscount = slot.delta < 0
                 const isBase     = slot.delta === 0
-                const isPremium  = slot.delta > 0
 
                 let label: string
                 if (slot.offsetDays === 0) label = 'Today'
